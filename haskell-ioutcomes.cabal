@@ -1,0 +1,85 @@
+name:                haskell-ioutcomes
+version:             0.1.0.0
+license:             BSD3
+license-file:        LICENSE
+author:              Przemek_Krogulski
+maintainer:          przemyslaw.krogulski@innovationsoftware.pl
+build-type:          Simple
+extra-source-files:  CHANGELOG.md
+cabal-version:       >=1.10
+
+library haskell-ioutcomes-lib
+  main-is:             Main.hs
+  build-depends:
+      base >=4.12 && <4.13
+    , dates
+    , Spock
+    , http-types
+    , text
+    , mtl
+    , lucid
+    , Spock-lucid
+    , aeson
+    , Spock-api
+    , split
+    , uri
+    , network-uri
+    , reroute
+    , json-autotype
+    , scientific
+    , postgresql-simple
+    , datetime
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , persistent-sqlite
+    , persistent-template
+    , time
+    , password
+    , email-validate
+    , bytestring
+    , lens
+    , smtp-mail
+    , network
+    , mime-mail
+    , random
+  hs-source-dirs:      lib
+  default-language:    Haskell2010
+
+executable haskell-ioutcomes
+  main-is:             Main.hs
+  build-depends:
+      base >=4.12 && <4.13
+    , dates
+    , Spock
+    , http-types
+    , text
+    , mtl
+    , lucid
+    , Spock-lucid
+    , aeson
+    , megaparsec
+    , Spock-api
+    , split
+    , uri
+    , network-uri
+    , reroute
+    , json-autotype
+    , scientific
+    , postgresql-simple
+    , datetime
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , persistent-sqlite
+    , persistent-template
+    , time
+    , password
+    , email-validate
+    , bytestring
+    , smtp-mail
+    , network
+    , mime-mail
+    , random
+  hs-source-dirs:      src
+  default-language:    Haskell2010

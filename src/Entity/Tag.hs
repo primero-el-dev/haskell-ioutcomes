@@ -87,7 +87,7 @@ instance ValidateEntity Tag where
         []
         [   ( "name"
             , Entity.Tag.name
-            ,   [ (notBlank, "Tag name is erquired")
+            ,   [ (notBlank, "Tag name is required")
                 , (maxLength 150, "Tag name must be at most 150 characteres long")
                 ]
             )

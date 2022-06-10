@@ -23,7 +23,7 @@ sendEmail_ host fromEmail password subject htmlPath args toEmail = do
 
 
 sendEmail :: Text -> FilePath -> [String] -> Text -> IO ()
-sendEmail = sendEmail_ "smtp.gmail.com" "ioutcome.app@gmail.com"
+sendEmail = sendEmail_ "smtp.gmail.com" "ioutcome.app@gmail.com" "1qaz@WSX3edc"
 
 
 sendRegistrationConfirmationEmail :: [String] -> Text -> IO ()

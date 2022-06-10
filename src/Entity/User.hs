@@ -93,7 +93,7 @@ instance ValidateEntity User where
         []
         [   ( "email"
             , email
-            ,   [ (notBlank, "Email is erquired")
+            ,   [ (notBlank, "Email is required")
                 , (minLength 7, "Email must be at least 7 characteres long")
                 , (maxLength 150, "Email must be at most 150 characteres long")
                 , (isEmail, "Given email is not valid")
@@ -101,7 +101,7 @@ instance ValidateEntity User where
             )
         ,   ( "password"
             , password
-            ,   [ (notBlank, "Password is erquired")
+            ,   [ (notBlank, "Password is required")
                 , (minLength 12, "Password must be at least 12 characteres long")
                 , (maxLength 80, "Password must be at most 80 characteres long")
                 ]

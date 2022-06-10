@@ -242,9 +242,15 @@ app = do
                 maybeTag <- runSQL $ P.get tagId :: ApiAction (Maybe Tag)
                 case maybeTag of
                     Nothing -> jsonErrorEntityNotFound "tag"
-                    Just tag -> do
-                        runSQL $ Database.Persist.Sqlite.delete tagId
-                        json $ object ["result" .= String "success", "id" .= tagId]
+                    Just tag ->
+                        case Entity.Tag.userId tag of
+                            Nothing -> jsonErrorAccessDenied
+                            Just tagUserId ->
+                                if tagUserId /= userId
+                                    then jsonErrorAccessDenied
+                                    else do
+                                        runSQL $ Database.Persist.Sqlite.delete tagId
+                                        json $ object ["result" .= String "success", "id" .= tagId]
 
 
     get "categories" $ do
@@ -263,7 +269,13 @@ app = do
                 maybeCategory <- runSQL $ P.get categoryId :: ApiAction (Maybe Category)
                 case maybeCategory of
                     Nothing -> jsonErrorEntityNotFound "category"
-                    Just category -> json category
+                    Just category ->
+                        case Entity.Category.userId category of
+                            Nothing -> jsonErrorAccessDenied
+                            Just categoryUserId ->
+                                if categoryUserId /= userId
+                                    then jsonErrorAccessDenied
+                                    else json category
 
     post "categories" $ do
         maybeUserId <- getValidTokenUserId
@@ -293,12 +305,18 @@ app = do
                         case maybeCategory of
                             Nothing -> errorJson 1 "Failed to parse request body as Category"
                             Just category ->
-                                if (Prelude.length . validateEntity $ category) > 0
-                                    then entityErrorJson . validateEntity $ category
-                                    else do
-                                        newCategory <- return (copyValues category storedCategory)
-                                        runSQL $ Database.Persist.Sqlite.replace categoryId newCategory
-                                        json newCategory
+                                case Entity.Category.userId category of
+                                    Nothing -> jsonErrorAccessDenied
+                                    Just categoryUserId ->
+                                        if categoryUserId /= userId
+                                            then jsonErrorAccessDenied
+                                            else do
+                                                if (Prelude.length . validateEntity $ category) > 0
+                                                    then entityErrorJson . validateEntity $ category
+                                                    else do
+                                                        newCategory <- return (copyValues category storedCategory)
+                                                        runSQL $ Database.Persist.Sqlite.replace categoryId newCategory
+                                                        json newCategory
 
     Web.Spock.delete ("categories" <//> var) $ \categoryId -> do
         maybeUserId <- getValidTokenUserId
@@ -308,9 +326,16 @@ app = do
                 maybeCategory <- runSQL $ P.get categoryId :: ApiAction (Maybe Category)
                 case maybeCategory of
                     Nothing -> jsonErrorEntityNotFound "category"
-                    Just category -> do
-                        runSQL $ Database.Persist.Sqlite.delete categoryId
-                        json $ object ["result" .= String "success", "id" .= categoryId]
+                    Just category ->
+                        case Entity.Category.userId category of
+                            Nothing -> jsonErrorAccessDenied
+                            Just categoryUserId ->
+                                if categoryUserId /= userId
+                                    then jsonErrorAccessDenied
+                                    else do
+                                        runSQL $ Database.Persist.Sqlite.delete categoryId
+                                        json $ object ["result" .= String "success", "id" .= categoryId]
+
 
     get "payments" $ do
         maybeUserId <- getValidTokenUserId
@@ -319,6 +344,22 @@ app = do
             Just userId -> do
                 payments <- runSQL $ selectList [ PaymentUserId ==. (Just userId) ] [Asc PaymentId]
                 json payments
+
+    get ("payments" <//> var) $ \paymentId -> do
+        maybeUserId <- getValidTokenUserId
+        case maybeUserId of
+            Nothing -> jsonErrorAccessDenied
+            Just userId -> do
+                maybePayment <- runSQL $ P.get paymentId :: ApiAction (Maybe Payment)
+                case maybePayment of
+                    Nothing -> jsonErrorEntityNotFound "payment"
+                    Just payment ->
+                        case Entity.Payment.userId payment of
+                            Nothing -> jsonErrorAccessDenied
+                            Just paymentUserId ->
+                                if paymentUserId /= userId
+                                    then jsonErrorAccessDenied
+                                    else json payment
 
     post "payments" $ do
         maybeUserId <- getValidTokenUserId
@@ -358,29 +399,35 @@ app = do
                 case maybePaymentStored of
                     Nothing -> jsonErrorEntityNotFound "payment"
                     Just storedPayment -> do
-                        maybePayment <- jsonBody :: ApiAction (Maybe Payment)
-                        case maybePayment of
-                            Nothing -> errorJson 1 "Failed to parse request body as Payment"
-                            Just payment -> do
-                                case Entity.Payment.categoryId payment of
-                                    Nothing -> do
-                                        newPayment <- return (copyValues payment storedPayment)
-                                        runSQL $ Database.Persist.Sqlite.replace paymentId newPayment
-                                        json newPayment
-                                    Just categoryId -> do
-                                        maybeCategory <- runSQL $ P.get categoryId :: ApiAction (Maybe Category)
-                                        case maybeCategory of
-                                            Nothing -> jsonErrorEntityNotFound "category"
-                                            Just category -> do
-                                                case Entity.Category.userId category of
-                                                    Nothing -> jsonErrorEntityNotFound "category"
-                                                    Just categoryUserId -> do
-                                                        if categoryUserId /= userId
-                                                            then jsonErrorEntityNotFound "category"
-                                                            else do
-                                                                newPayment <- return (copyValues payment storedPayment)
-                                                                runSQL $ Database.Persist.Sqlite.replace paymentId newPayment
-                                                                json newPayment
+                        case Entity.Payment.userId storedPayment of
+                            Nothing -> jsonErrorAccessDenied
+                            Just paymentUserId ->
+                                if paymentUserId /= userId
+                                    then jsonErrorAccessDenied
+                                    else do
+                                        maybePayment <- jsonBody :: ApiAction (Maybe Payment)
+                                        case maybePayment of
+                                            Nothing -> errorJson 1 "Failed to parse request body as Payment"
+                                            Just payment -> do
+                                                case Entity.Payment.categoryId payment of
+                                                    Nothing -> do
+                                                        newPayment <- return (copyValues payment storedPayment)
+                                                        runSQL $ Database.Persist.Sqlite.replace paymentId newPayment
+                                                        json newPayment
+                                                    Just categoryId -> do
+                                                        maybeCategory <- runSQL $ P.get categoryId :: ApiAction (Maybe Category)
+                                                        case maybeCategory of
+                                                            Nothing -> jsonErrorEntityNotFound "category"
+                                                            Just category -> do
+                                                                case Entity.Category.userId category of
+                                                                    Nothing -> jsonErrorEntityNotFound "category"
+                                                                    Just categoryUserId -> do
+                                                                        if categoryUserId /= userId
+                                                                            then jsonErrorEntityNotFound "category"
+                                                                            else do
+                                                                                newPayment <- return (copyValues payment storedPayment)
+                                                                                runSQL $ Database.Persist.Sqlite.replace paymentId newPayment
+                                                                                json newPayment
 
     Web.Spock.delete ("payments" <//> var) $ \paymentId -> do
         maybeUserId <- getValidTokenUserId
@@ -390,9 +437,15 @@ app = do
                 maybePayment <- runSQL $ P.get paymentId :: ApiAction (Maybe Payment)
                 case maybePayment of
                     Nothing -> jsonErrorEntityNotFound "payment"
-                    Just payment -> do
-                        runSQL $ Database.Persist.Sqlite.delete paymentId
-                        json $ object ["result" .= String "success", "id" .= paymentId]
+                    Just payment ->
+                        case Entity.Payment.userId payment of
+                            Nothing -> jsonErrorAccessDenied
+                            Just paymentUserId ->
+                                if paymentUserId /= userId
+                                    then jsonErrorAccessDenied
+                                    else do
+                                        runSQL $ Database.Persist.Sqlite.delete paymentId
+                                        json $ object ["result" .= String "success", "id" .= paymentId]
 
 
 --jsonErrorEntityNotFound :: (MonadIO m) => String -> ActionCtxT ctx m b

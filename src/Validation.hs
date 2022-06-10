@@ -21,6 +21,14 @@ isEmail :: Text -> Bool
 isEmail = isValid . encodeUtf8
 
 
+minValue :: Double -> Double -> Bool
+minValue min value = value >= min
+
+
+maxValue :: Double -> Double -> Bool
+maxValue max value = value <= max
+
+
 inArray :: Eq a => [a] -> a -> Bool
 inArray [] _ = False
 inArray (x:xs) value =

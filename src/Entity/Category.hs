@@ -87,7 +87,7 @@ instance ValidateEntity Category where
         []
         [   ( "name"
             , Entity.Category.name
-            ,   [ (notBlank, "Category name is erquired")
+            ,   [ (notBlank, "Category name is required")
                 , (maxLength 150, "Category name must be at most 150 characteres long")
                 ]
             )

@@ -53,7 +53,6 @@ data PaymentType = Income | Outcome deriving (Generic, Show, Read, Eq, FromJSON,
 instance PersistField PaymentType where
     toPersistValue value = PersistText (Data.Text.pack . show $ value)
     fromPersistValue (PersistText paymentType) = Right (read . Data.Text.unpack $ paymentType)
-    fromPersistValue x = UTF8.fromString <$> fromPersistValue x
 
 
 data Currency = PLN | EUR | USD deriving (Generic, Show, Read, Eq, FromJSON, ToJSON, PersistFieldSql)
@@ -61,7 +60,6 @@ data Currency = PLN | EUR | USD deriving (Generic, Show, Read, Eq, FromJSON, ToJ
 instance PersistField Currency where
     toPersistValue value = PersistText (Data.Text.pack . show $ value)
     fromPersistValue (PersistText currency) = Right (read . Data.Text.unpack $ currency)
-    fromPersistValue x = UTF8.fromString <$> fromPersistValue x
 
 
 name :: Payment -> Text
@@ -119,8 +117,8 @@ instance ToJSON Payment where
     toJSON (Payment name paymentType price currency categoryId createdAt userId) = object
         [ "name" .= name
         , "paymentType" .= paymentType
-        , "price" .= paymentType
-        , "currency" .= paymentType
+        , "price" .= price
+        , "currency" .= currency
         , "categoryId" .= categoryId
         , "createdAt" .= createdAt
         ]
@@ -137,8 +135,14 @@ instance ValidateEntity Payment where
         []
         [   ( "name"
             , Entity.Payment.name
-            ,   [ (notBlank, "Payment name is erquired")
-                , (maxLength 150, "Payment name must be at most 150 characteres long")
+            ,   [ (notBlank, "Payment name is required")
+                , (maxLength 255, "Payment name must be at most 255 characteres long")
                 ]
             )
+        {-,   ( "price"
+            , Entity.Payment.price
+            ,   [ (minValue 0, "Payment price must be positive")
+                , (maxValue 99999999.99, "Payment price is too big")
+                ]
+            )-}
         ]

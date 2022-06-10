@@ -29,6 +29,7 @@ import Database.Persist.Sqlite hiding (get)
 import Database.Persist.TH
 import Database.Persist.Sqlite
 
+import Entity.Common
 import Entity.User
 import Validation
 
@@ -50,10 +51,19 @@ createdAt :: Tag -> Maybe DateTime
 createdAt (Tag _ createdAt _) = createdAt
 
 
+userId :: Tag -> Maybe UserId
+userId (Tag _ _ userId) = userId
+
+
 makeTag :: Text -> Tag
 makeTag name =
     Tag name Nothing Nothing
 
+
+instance InitCreatedAt Tag where
+    initCreatedAt (Tag name _ userId) = do
+        createdAt <- getCurrentTime
+        return (Tag name (Just createdAt) userId)
 
 instance FromJSON Tag where
     parseJSON (Object v) = makeTag
@@ -63,11 +73,14 @@ instance ToJSON Tag where
     toJSON (Tag name createdAt userId) = object
         [ "name" .= name
         , "createdAt" .= createdAt
-        , "userId" .= userId
         ]
 
+instance CopyValues Tag where
+    copyValues from to =
+        Tag (Entity.Tag.name from) (Entity.Tag.createdAt to) (Entity.Tag.userId to)
+
 instance ToJSON (Entity Tag) where
-    toJSON (Entity tagId tag) = toJSON tag
+    toJSON (Entity _ tag) = toJSON tag
 
 instance ValidateEntity Tag where
     validateEntity = validateEntity_

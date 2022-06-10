@@ -30,6 +30,7 @@ import Database.Persist.TH
 import Database.Persist.Sqlite
 
 import Validation
+import Entity.Common
 
 
 share [mkPersist sqlSettings, mkMigrate "migrateUser"] [persistLowerCase|
@@ -41,6 +42,9 @@ User
     UniqueEmail email
     deriving Show
 |]
+
+class SetUserId a where
+    setUserId :: a -> Maybe UserId -> a
 
 
 email :: User -> Text
@@ -63,6 +67,11 @@ makeUser :: Text -> Text -> User
 makeUser email password =
     User email password Nothing True
 
+
+instance InitCreatedAt User where
+    initCreatedAt (User email password _ emailVerified) = do
+        createdAt <- getCurrentTime
+        return (User email password (Just createdAt) emailVerified)
 
 instance FromJSON User where
     parseJSON (Object v) = makeUser

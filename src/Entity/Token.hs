@@ -45,7 +45,7 @@ Token json
 |]
 
 
-data Type = RegistrationConfirmationType | AuthorizationType
+data Type = RegistrationConfirmationType | AuthorizationType deriving (Eq)
 
 instance Show Type where
     show RegistrationConfirmationType = "registration_confirmation"

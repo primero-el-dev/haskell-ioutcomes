@@ -56,7 +56,6 @@ import Entity.Token
 import Entity.Tag
 import Entity.Category
 import Entity.Payment
-import Persistence
 import Validation
 import Mail
 import Auth
@@ -140,6 +139,16 @@ authorize rest = do
         Nothing -> jsonErrorAccessDenied
         Just user -> do rest
 
+{-
+checkEntityUser :: (User
+checkEntityUser =
+    case Entity.Tag.userId tag of
+        Nothing -> jsonErrorAccessDenied
+        Just tagUserId ->
+            if tagUserId /= userId
+                then jsonErrorAccessDenied
+                else
+-}
 
 app :: Api
 app = do
@@ -197,7 +206,13 @@ app = do
                 maybeTag <- runSQL $ P.get tagId :: ApiAction (Maybe Tag)
                 case maybeTag of
                     Nothing -> jsonErrorEntityNotFound "tag"
-                    Just tag -> json tag
+                    Just tag ->
+                        case Entity.Tag.userId tag of
+                            Nothing -> jsonErrorAccessDenied
+                            Just tagUserId ->
+                                if tagUserId /= userId
+                                    then jsonErrorAccessDenied
+                                    else json tag
 
     post "tags" $ do
         maybeUserId <- getValidTokenUserId
@@ -222,17 +237,23 @@ app = do
                 maybeTagStored <- runSQL $ P.get tagId :: ApiAction (Maybe Tag)
                 case maybeTagStored of
                     Nothing -> jsonErrorEntityNotFound "tag"
-                    Just storedTag -> do
-                        maybeTag <- jsonBody :: ApiAction (Maybe Tag)
-                        case maybeTag of
-                            Nothing -> errorJson 1 "Failed to parse request body as Tag"
-                            Just tag ->
-                                if (Prelude.length . validateEntity $ tag) > 0
-                                    then entityErrorJson . validateEntity $ tag
+                    Just storedTag ->
+                        case Entity.Tag.userId storedTag of
+                            Nothing -> jsonErrorAccessDenied
+                            Just tagUserId ->
+                                if tagUserId /= userId
+                                    then jsonErrorAccessDenied
                                     else do
-                                        newTag <- return (copyValues tag storedTag)
-                                        runSQL $ Database.Persist.Sqlite.replace tagId newTag
-                                        json newTag
+                                        maybeTag <- jsonBody :: ApiAction (Maybe Tag)
+                                        case maybeTag of
+                                            Nothing -> errorJson 1 "Failed to parse request body as Tag"
+                                            Just tag ->
+                                                if (Prelude.length . validateEntity $ tag) > 0
+                                                    then entityErrorJson . validateEntity $ tag
+                                                    else do
+                                                        newTag <- return (copyValues tag storedTag)
+                                                        runSQL $ Database.Persist.Sqlite.replace tagId newTag
+                                                        json newTag
 
     Web.Spock.delete ("tags" <//> var) $ \tagId -> do
         maybeUserId <- getValidTokenUserId
